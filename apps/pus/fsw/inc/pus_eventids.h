@@ -39,4 +39,6 @@
 #define PUS_SUB_CMD_ERR_EID   11
 #define PUS_TABLE_REG_ERR_EID 12
 
+#define PUS_TC_17_1_INF_EID 13
+
 #endif /* PUS_EVENTS_H */

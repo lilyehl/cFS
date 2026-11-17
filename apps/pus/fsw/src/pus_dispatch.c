@@ -46,7 +46,7 @@ bool PUS_VerifyCmdLength(const CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength)
     CFE_MSG_GetSize(MsgPtr, &ActualLength);
 
     /*
-    ** Verify the command packet length.
+       Verify the command packet length
     */
     if (ExpectedLength != ActualLength)
     {
@@ -76,50 +76,77 @@ bool PUS_VerifyCmdLength(const CFE_MSG_Message_t *MsgPtr, size_t ExpectedLength)
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
 void PUS_ProcessGroundCommand(const CFE_SB_Buffer_t *SBBufPtr)
 {
-    CFE_MSG_FcnCode_t CommandCode = 0;
+    // if (PUS_VerifyCmdLength(&SBBufPtr->Msg, ))
 
-    CFE_MSG_GetFcnCode(&SBBufPtr->Msg, &CommandCode);
+    // as defined in the sample app, it seems the 1 bit of the second byte is the function code
+    // temp : just checking that the base works with a TC(17,1) "are you alive?" ping
+    // TODO : Actually process the ground command
 
-    /*
-    ** Process PUS app ground commands
-    */
-    switch (CommandCode)
+    const uint8_t *shead      = (const uint8_t *)SBBufPtr + sizeof(CFE_MSG_Message_t);
+    uint8          service    = shead[1]; // byte 7
+    uint8          subservice = shead[2]; // byte 8
+
+    switch (service)
     {
-        case PUS_NOOP_CC:
-            if (PUS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(PUS_NoopCmd_t)))
+        case 17:
+            switch (subservice)
             {
-                PUS_NoopCmd((const PUS_NoopCmd_t *)SBBufPtr);
+                case 1: // are you alive ?
+                    CFE_EVS_SendEvent(PUS_TC_17_1_INF_EID,
+                                      CFE_EVS_EventType_INFORMATION,
+                                      "PUS : TC(17, 1) are-you-alive received");
+                    break;
             }
-            break;
 
-        case PUS_RESET_COUNTERS_CC:
-            if (PUS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(PUS_ResetCountersCmd_t)))
-            {
-                PUS_ResetCountersCmd((const PUS_ResetCountersCmd_t *)SBBufPtr);
-            }
             break;
-
-        case PUS_PROCESS_CC:
-            if (PUS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(PUS_ProcessCmd_t)))
-            {
-                PUS_ProcessCmd((const PUS_ProcessCmd_t *)SBBufPtr);
-            }
-            break;
-
-        case PUS_DISPLAY_PARAM_CC:
-            if (PUS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(PUS_DisplayParamCmd_t)))
-            {
-                PUS_DisplayParamCmd((const PUS_DisplayParamCmd_t *)SBBufPtr);
-            }
-            break;
-
-        default:
-            CFE_EVS_SendEvent(PUS_CC_ERR_EID,
-                              CFE_EVS_EventType_ERROR,
-                              "Invalid ground command code: CC = %d",
-                              CommandCode);
+        default: // Unknown service
+            CFE_EVS_SendEvent(PUS_VALUE_INF_EID, CFE_EVS_EventType_INFORMATION, "PUS : unknown service received");
             break;
     }
+
+    // CFE_MSG_FcnCode_t CommandCode = 0;
+    // CFE_MSG_GetFcnCode(&SBBufPtr->Msg, &CommandCode);
+
+    // /*
+    // ** Process PUS app ground commands
+    // */
+    // switch (CommandCode)
+    // {
+    //     case PUS_NOOP_CC:
+    //         if (PUS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(PUS_NoopCmd_t)))
+    //         {
+    //             PUS_NoopCmd((const PUS_NoopCmd_t *)SBBufPtr);
+    //         }
+    //         break;
+
+    //     case PUS_RESET_COUNTERS_CC:
+    //         if (PUS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(PUS_ResetCountersCmd_t)))
+    //         {
+    //             PUS_ResetCountersCmd((const PUS_ResetCountersCmd_t *)SBBufPtr);
+    //         }
+    //         break;
+
+    //     case PUS_PROCESS_CC:
+    //         if (PUS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(PUS_ProcessCmd_t)))
+    //         {
+    //             PUS_ProcessCmd((const PUS_ProcessCmd_t *)SBBufPtr);
+    //         }
+    //         break;
+
+    //     case PUS_DISPLAY_PARAM_CC:
+    //         if (PUS_VerifyCmdLength(&SBBufPtr->Msg, sizeof(PUS_DisplayParamCmd_t)))
+    //         {
+    //             PUS_DisplayParamCmd((const PUS_DisplayParamCmd_t *)SBBufPtr);
+    //         }
+    //         break;
+
+    //     default:
+    //         CFE_EVS_SendEvent(PUS_CC_ERR_EID,
+    //                           CFE_EVS_EventType_ERROR,
+    //                           "Invalid ground command code: CC = %d",
+    //                           CommandCode);
+    //         break;
+    // }
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * **/
